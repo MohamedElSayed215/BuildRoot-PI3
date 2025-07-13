@@ -24,7 +24,7 @@ jobs:
         cd buildroot
         git checkout 2024.02
 
-    - name: Copy .config
+    - name: Copy .config to Buildroot
       run: |
         cp .config buildroot/.config
 
