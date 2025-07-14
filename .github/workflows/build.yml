@@ -20,19 +20,18 @@ jobs:
 
     - name: Clone Buildroot
       run: |
-        git clone https://github.com/buildroot/buildroot.git
-        cd buildroot
-        git checkout 2024.02
+        git clone --depth 1 --branch 2024.02 https://github.com/buildroot/buildroot.git
 
     - name: Copy .config to Buildroot
-      run: |
-        cp .config buildroot/.config
+      run: cp .config buildroot/.config
 
-    - name: Build
+    - name: Config Buildroot
       working-directory: buildroot
-      run: |
-        make olddefconfig
-        make
+      run: make olddefconfig
+
+    - name: Build Image
+      working-directory: buildroot
+      run: make
 
     - name: Upload Image
       uses: actions/upload-artifact@v4
