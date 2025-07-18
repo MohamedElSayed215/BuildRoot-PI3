@@ -1,4 +1,4 @@
-name: Buildroot RPi3 Image
+name: Build Buildroot Image for Raspberry Pi 3
 
 on:
   push:
@@ -8,33 +8,33 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cpio rsync git wget unzip python3 bc bison flex libncurses5-dev libssl-dev u-boot-tools
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cpio rsync unzip bc \
+            gcc g++ git make python3 file \
+            wget libncurses5-dev libssl-dev
 
-    - name: Clone Buildroot
-      run: |
-        git clone --depth 1 --branch 2024.02 https://github.com/buildroot/buildroot.git
+      - name: Clone Buildroot
+        run: |
+          git clone --branch 2024.02 https://github.com/buildroot/buildroot.git
 
-    - name: Copy .config to Buildroot
-      run: cp .config buildroot/.config
+      - name: Apply .config
+        run: |
+          cp .github/configs/rpi3-headless.config buildroot/.config
+          make -C buildroot olddefconfig
 
-    - name: Config Buildroot
-      working-directory: buildroot
-      run: make olddefconfig
+      - name: Build
+        run: |
+          make -C buildroot
 
-    - name: Build Image
-      working-directory: buildroot
-      run: make
-
-    - name: Upload Image
-      uses: actions/upload-artifact@v4
-      with:
-        name: rpi3-buildroot-image
-        path: buildroot/output/images/
+      - name: Upload image
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpi3-buildroot-image
+          path: buildroot/output/images/
