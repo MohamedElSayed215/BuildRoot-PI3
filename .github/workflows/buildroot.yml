@@ -1,45 +1,57 @@
-name: Build Buildroot for Raspberry Pi 3
+name: Buildroot RPi3 Image
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+    - name: Checkout Repo
+      uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git cpio unzip rsync bc wget python3
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cpio rsync git wget unzip python3 bc \
+          bison flex libncurses5-dev libssl-dev \
+          fakeroot u-boot-tools
 
-      - name: Clone Buildroot
-        run: |
-          git clone https://github.com/buildroot/buildroot.git
-          cd buildroot
-          git checkout 2024.02
+    - name: Cache Buildroot Download Directory
+      uses: actions/cache@v3
+      with:
+        path: buildroot/dl
+        key: buildroot-${{ runner.os }}-dl
 
-      - name: Copy .config
-        run: cp .config buildroot/.config
+    - name: Clone Buildroot
+      run: |
+        git clone --depth 1 --branch 2024.02 https://github.com/buildroot/buildroot.git
 
-      - name: Build Buildroot (Silent)
-        working-directory: buildroot
-        run: make -s | tee build.log
+    - name: Copy .config to Buildroot
+      run: cp .config buildroot/.config
 
-      - name: Upload Build Log
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: buildroot/build.log
+    - name: Configure Buildroot
+      working-directory: buildroot
+      run: make olddefconfig
 
-      - name: Upload SD Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: sdcard-img
-          path: buildroot/output/images/sdcard.img
+    - name: Build Image (with logs)
+      working-directory: buildroot
+      run: |
+        make > ../build.log 2>&1 || (cat ../build.log && false)
+
+    - name: Upload Build Log
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build.log
+
+    - name: Upload Image
+      uses: actions/upload-artifact@v4
+      with:
+        name: rpi3-buildroot-image
+        path: buildroot/output/images/
