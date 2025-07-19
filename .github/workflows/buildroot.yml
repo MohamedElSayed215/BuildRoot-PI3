@@ -1,0 +1,45 @@
+name: Build Buildroot for Raspberry Pi 3
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git cpio unzip rsync bc wget python3
+
+      - name: Clone Buildroot
+        run: |
+          git clone https://github.com/buildroot/buildroot.git
+          cd buildroot
+          git checkout 2024.02
+
+      - name: Copy .config
+        run: cp .config buildroot/.config
+
+      - name: Build Buildroot (Silent)
+        working-directory: buildroot
+        run: make -s | tee build.log
+
+      - name: Upload Build Log
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: buildroot/build.log
+
+      - name: Upload SD Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdcard-img
+          path: buildroot/output/images/sdcard.img
