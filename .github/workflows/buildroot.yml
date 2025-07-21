@@ -1,4 +1,4 @@
-name: Buildroot RPi3 Image
+name: Buildroot – RPi3 Desktop Image
 
 on:
   push:
@@ -10,48 +10,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Dependencies
+    - name: Install build dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          cpio rsync git wget unzip python3 bc \
-          bison flex libncurses5-dev libssl-dev \
-          fakeroot u-boot-tools
+        sudo apt update
+        sudo apt install -y sed make binutils gcc g++ bash patch \
+          gzip bzip2 perl tar cpio python3 unzip rsync wget \
+          libncurses5-dev libssl-dev bc file
 
-    - name: Cache Buildroot Download Directory
-      uses: actions/cache@v3
-      with:
-        path: buildroot/dl
-        key: buildroot-${{ runner.os }}-dl
-
-    - name: Clone Buildroot
+    - name: Copy and apply custom defconfig
       run: |
-        git clone --depth 1 --branch 2024.02 https://github.com/buildroot/buildroot.git
+        cp configs/rpi3_desktop_defconfig buildroot/configs/
+        cd buildroot
+        make rpi3_desktop_defconfig
 
-    - name: Copy .config to Buildroot
-      run: cp .config buildroot/.config
-
-    - name: Configure Buildroot
-      working-directory: buildroot
-      run: make olddefconfig
-
-    - name: Build Image (with logs)
-      working-directory: buildroot
+    - name: Build Buildroot image
       run: |
-        make > ../build.log 2>&1 || (cat ../build.log && false)
+        cd buildroot
+        make -j$(nproc)
 
-    - name: Upload Build Log
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: build-log
-        path: build.log
-
-    - name: Upload Image
-      uses: actions/upload-artifact@v4
-      with:
-        name: rpi3-buildroot-image
+        name: rpi3-desktop-image
         path: buildroot/output/images/
