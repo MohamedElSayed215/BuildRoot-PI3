@@ -1,7 +1,9 @@
-name: Buildroot – RPi3 Desktop Image
+name: Buildroot for Raspberry Pi 3
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
@@ -11,32 +13,31 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
     - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y sed make binutils gcc g++ bash patch \
-          gzip bzip2 perl tar cpio python3 unzip rsync wget \
-          libncurses5-dev libssl-dev bc file
+        sudo apt-get update
+        sudo apt-get install -y build-essential gcc make unzip wget bc libncurses-dev git python3 rsync
 
     - name: Clone Buildroot
       run: |
         git clone --depth 1 https://github.com/buildroot/buildroot.git
 
-    - name: Apply custom defconfig
+    - name: Apply defconfig and update config
       run: |
         cp configs/rpi3_desktop_defconfig buildroot/configs/
         cd buildroot
         make rpi3_desktop_defconfig
+        make olddefconfig
 
-    - name: Build Buildroot image
+    - name: Build Image
       run: |
         cd buildroot
-        make -j$(nproc)
+        make
 
-    - name: Upload output
-      uses: actions/upload-artifact@v4
+    - name: Upload output image
+      uses: actions/upload-artifact@v3
       with:
-        name: rpi3-desktop-image
+        name: buildroot-rpi3-output
         path: buildroot/output/images/
