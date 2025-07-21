@@ -13,14 +13,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install build dependencies
+    - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y sed make binutils gcc g++ bash patch \
           gzip bzip2 perl tar cpio python3 unzip rsync wget \
           libncurses5-dev libssl-dev bc file
 
-    - name: Copy and apply custom defconfig
+    - name: Clone Buildroot
+      run: |
+        git clone --depth 1 https://github.com/buildroot/buildroot.git
+
+    - name: Apply custom defconfig
       run: |
         cp configs/rpi3_desktop_defconfig buildroot/configs/
         cd buildroot
@@ -31,7 +35,7 @@ jobs:
         cd buildroot
         make -j$(nproc)
 
-    - name: Upload build artifacts
+    - name: Upload output
       uses: actions/upload-artifact@v4
       with:
         name: rpi3-desktop-image
